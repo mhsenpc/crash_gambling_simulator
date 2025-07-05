@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Crash Gambling Simulator</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    input { margin: 5px; }
+    table, th, td { border: 1px solid #ccc; border-collapse: collapse; padding: 5px; }
+    table { width: 100%; margin-top: 20px; }
+    .win { color: green; }
+    .loss { color: red; }
+  </style>
+</head>
+<body>
+  <h1>Crash Gambling Simulator</h1>
+  <div>
+    <label>Starting Balance: <input id="startBalance" type="number" value="10000"></label><br>
+    <label>Base Bet: <input id="baseBet" type="number" value="100"></label><br>
+    <label>Increase on Loss (%): <input id="lossPercent" type="number" value="100"></label><br>
+    <label>Cash Out at (X): <input id="cashOut" type="number" step="0.1" value="2.0"></label><br>
+    <button onclick="simulate()">Simulate</button>
+  </div>
+
+  <div>
+  <label for="crashData">Crash Results Data:</label><br>
+  <textarea id="crashData" rows="4" style="width: 100%; margin: 10px 0;">1.16, 4.58, 1.00, 6.01, 45.03, 11.47, 1.62, 1.01, 1.87, 1.56, 1.54, 1.00, 1.07, 15.83, 8.87, 1.34, 2.14, 1.24, 1.06, 1.38, 1.04, 2.37, 1.36, 1.23, 3.14, 1.00, 2.95, 8.97, 5.01, 1.81, 7.34, 14.24, 1.27, 2.17, 1.12, 1.00, 1.00, 3.43, 2.97, 1.47, 3.04, 1.00, 3.05, 1.60, 1.26, 2.09, 1.00, 1.81, 1.72, 5.59, 3.41, 18.32</textarea>
+</div>
+
+  <table id="resultTable">
+    <thead>
+      <tr>
+        <th>Crash Result</th>
+        <th>Bet</th>
+        <th>Result</th>
+        <th>Balance</th>
+        <th>Accumulative Loss</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <canvas id="chart" height="100"></canvas>
+
+  <script>
+    function simulate() {
+      const startBalance = parseFloat(document.getElementById("startBalance").value);
+      const baseBet = parseFloat(document.getElementById("baseBet").value);
+      const lossPercent = parseFloat(document.getElementById("lossPercent").value) / 100;
+      const cashOut = parseFloat(document.getElementById("cashOut").value);
+
+      let balance = startBalance;
+      let bet = baseBet;
+      let accumLoss = 0;
+      let data = [];
+      let crashResultsText = document.getElementById("crashData").value;
+      let crashResults = crashResultsText
+        .split(',')
+        .map(x => parseFloat(x.trim()))
+        .filter(x => !isNaN(x));
+
+      const tbody = document.querySelector("#resultTable tbody");
+      tbody.innerHTML = "";
+
+      for (let i = 0; i <= crashResults.length; i++) {
+        const crash = crashResults[i]
+        let win = crash >= cashOut;
+
+        if (bet > balance) break;
+
+        let earning = 0;
+        if (win) {
+          earning = bet * (cashOut - 1);
+          balance += earning;
+          accumLoss = 0;
+        } else {
+          earning = -bet;
+          balance -= bet;
+          accumLoss += bet;
+        }
+
+        data.push({ crash, bet: Math.round(bet), earning: Math.round(earning), balance: Math.round(balance), accumLoss: Math.round(accumLoss), win });
+
+        if(win) {
+          bet = baseBet;
+        }
+        else {
+          bet += Math.round(bet * lossPercent);
+        }
+      }
+
+      data.forEach((d) => {
+        const resultClass = d.earning >= 0 ? 'win' : 'loss';
+        const row = `<tr><td>${d.crash}x</td><td>${d.bet}</td><td class="${resultClass}">${d.earning >= 0 ? '+' : ''}${d.earning}</td><td>${d.balance}</td><td class='loss'>${d.accumLoss}</td></tr>`;
+        tbody.innerHTML += row;
+      });
+
+      // chart area
+      if (window.chart && window.chart.destroy) {
+        console.log("Destroying previous chart instance");
+        window.chart.destroy();
+      }
+
+      const ctx = document.getElementById("chart").getContext("2d");
+      window.chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: data.map((_, i) => i + 1),
+          datasets: [
+            {
+              label: 'Balance',
+              data: data.map(d => d.balance),
+              borderColor: 'blue',
+              fill: false
+            },
+            {
+              label: 'Bet Amount',
+              data: data.map(d => d.bet),
+              borderColor: 'green',
+              fill: false
+            },
+            {
+              label: 'Accumulative Loss',
+              data: data.map(d => d.accumLoss),
+              borderColor: 'red',
+              fill: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
