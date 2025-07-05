@@ -12,32 +12,61 @@
     table { width: 100%; margin-top: 20px; }
     .win { color: green; }
     .loss { color: red; }
+    .header-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .language-picker {
+      position: relative;
+      display: inline-block;
+    }
+    .language-picker select {
+      padding: 5px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      background-color: #f8f8f8;
+      cursor: pointer;
+    }
+    [dir="rtl"] {
+      text-align: right;
+      direction: rtl;
+    }
   </style>
 </head>
 <body>
-  <h1>Crash Gambling Simulator</h1>
+  <div class="header-container">
+    <h1 id="title">Crash Gambling Simulator</h1>
+    <div class="language-picker">
+      <select id="language-select" onchange="changeLanguage(this.value)">
+        <option value="en">English</option>
+        <option value="fa">فارسی</option>
+        <option value="zh">中文</option>
+      </select>
+    </div>
+  </div>
   <div>
-    <label>Starting Balance: <input id="startBalance" type="number" value="10000"></label><br>
-    <label>Base Bet: <input id="baseBet" type="number" value="100"></label><br>
-    <label>Increase on Loss (%): <input id="lossPercent" type="number" value="100"></label><br>
-    <label>Increase on Win (%): <input id="winPercent" type="number" value="0"></label><br>
-    <label>Cash Out at (X): <input id="cashOut" type="number" step="0.1" value="2.0"></label><br>
-    <button onclick="simulate()">Simulate</button>
+    <label><span id="startBalanceLabel">Starting Balance:</span> <input id="startBalance" type="number" value="10000"></label><br>
+    <label><span id="baseBetLabel">Base Bet:</span> <input id="baseBet" type="number" value="100"></label><br>
+    <label><span id="lossPercentLabel">Increase on Loss (%):</span> <input id="lossPercent" type="number" value="100"></label><br>
+    <label><span id="winPercentLabel">Increase on Win (%):</span> <input id="winPercent" type="number" value="0"></label><br>
+    <label><span id="cashOutLabel">Cash Out at (X):</span> <input id="cashOut" type="number" step="0.1" value="2.0"></label><br>
+    <button id="simulateButton" onclick="simulate()">Simulate</button>
   </div>
 
   <div>
-  <label for="crashData">Crash Results Data:</label><br>
+  <label for="crashData"><span id="crashDataLabel">Crash Results Data:</span></label><br>
   <textarea id="crashData" rows="4" style="width: 100%; margin: 10px 0;">1.16, 4.58, 1.00, 6.01, 45.03, 11.47, 1.62, 1.01, 1.87, 1.56, 1.54, 1.00, 1.07, 15.83, 8.87, 1.34, 2.14, 1.24, 1.06, 1.38, 1.04, 2.37, 1.36, 1.23, 3.14, 1.00, 2.95, 8.97, 5.01, 1.81, 7.34, 14.24, 1.27, 2.17, 1.12, 1.00, 1.00, 3.43, 2.97, 1.47, 3.04, 1.00, 3.05, 1.60, 1.26, 2.09, 1.00, 1.81, 1.72, 5.59, 3.41, 18.32</textarea>
 </div>
 
   <table id="resultTable">
     <thead>
       <tr>
-        <th>Crash Result</th>
-        <th>Bet</th>
-        <th>Result</th>
-        <th>Balance</th>
-        <th>Accumulative Loss</th>
+        <th id="crashResultHeader">Crash Result</th>
+        <th id="betHeader">Bet</th>
+        <th id="resultHeader">Result</th>
+        <th id="balanceHeader">Balance</th>
+        <th id="accumLossHeader">Accumulative Loss</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -45,6 +74,100 @@
   <canvas id="chart" height="100"></canvas>
 
   <script>
+    // Translations for all UI text
+    const translations = {
+      en: {
+        title: "Crash Gambling Simulator",
+        startBalanceLabel: "Starting Balance:",
+        baseBetLabel: "Base Bet:",
+        lossPercentLabel: "Increase on Loss (%):",
+        winPercentLabel: "Increase on Win (%):",
+        cashOutLabel: "Cash Out at (X):",
+        simulateButton: "Simulate",
+        crashDataLabel: "Crash Results Data:",
+        crashResultHeader: "Crash Result",
+        betHeader: "Bet",
+        resultHeader: "Result",
+        balanceHeader: "Balance",
+        accumLossHeader: "Accumulative Loss",
+        balanceChart: "Balance",
+        betAmountChart: "Bet Amount",
+        accumLossChart: "Accumulative Loss"
+      },
+      fa: {
+        title: "شبیه ساز قمار کرش",
+        startBalanceLabel: "موجودی اولیه:",
+        baseBetLabel: "شرط پایه:",
+        lossPercentLabel: "افزایش در صورت باخت (٪):",
+        winPercentLabel: "افزایش در صورت برد (٪):",
+        cashOutLabel: "برداشت در (X):",
+        simulateButton: "شبیه سازی",
+        crashDataLabel: "داده های نتایج کرش:",
+        crashResultHeader: "نتیجه کرش",
+        betHeader: "شرط",
+        resultHeader: "نتیجه",
+        balanceHeader: "موجودی",
+        accumLossHeader: "ضرر تجمعی",
+        balanceChart: "موجودی",
+        betAmountChart: "مقدار شرط",
+        accumLossChart: "ضرر تجمعی"
+      },
+      zh: {
+        title: "崩溃博彩模拟器",
+        startBalanceLabel: "起始余额:",
+        baseBetLabel: "基本投注:",
+        lossPercentLabel: "亏损时增加 (%):",
+        winPercentLabel: "获胜时增加 (%):",
+        cashOutLabel: "兑现倍数 (X):",
+        simulateButton: "模拟",
+        crashDataLabel: "崩溃结果数据:",
+        crashResultHeader: "崩溃结果",
+        betHeader: "投注",
+        resultHeader: "结果",
+        balanceHeader: "余额",
+        accumLossHeader: "累计损失",
+        balanceChart: "余额",
+        betAmountChart: "投注金额",
+        accumLossChart: "累计损失"
+      }
+    };
+
+    // Function to change the language
+    function changeLanguage(lang) {
+      // Set the HTML lang attribute
+      document.documentElement.lang = lang;
+
+      // Set RTL direction for Persian
+      if (lang === 'fa') {
+        document.body.setAttribute('dir', 'rtl');
+      } else {
+        document.body.removeAttribute('dir');
+      }
+
+      // Update all text elements
+      document.getElementById('title').textContent = translations[lang].title;
+      document.getElementById('startBalanceLabel').textContent = translations[lang].startBalanceLabel;
+      document.getElementById('baseBetLabel').textContent = translations[lang].baseBetLabel;
+      document.getElementById('lossPercentLabel').textContent = translations[lang].lossPercentLabel;
+      document.getElementById('winPercentLabel').textContent = translations[lang].winPercentLabel;
+      document.getElementById('cashOutLabel').textContent = translations[lang].cashOutLabel;
+      document.getElementById('simulateButton').textContent = translations[lang].simulateButton;
+      document.getElementById('crashDataLabel').textContent = translations[lang].crashDataLabel;
+      document.getElementById('crashResultHeader').textContent = translations[lang].crashResultHeader;
+      document.getElementById('betHeader').textContent = translations[lang].betHeader;
+      document.getElementById('resultHeader').textContent = translations[lang].resultHeader;
+      document.getElementById('balanceHeader').textContent = translations[lang].balanceHeader;
+      document.getElementById('accumLossHeader').textContent = translations[lang].accumLossHeader;
+
+      // Update chart if it exists
+      if (window.chart) {
+        window.chart.data.datasets[0].label = translations[lang].balanceChart;
+        window.chart.data.datasets[1].label = translations[lang].betAmountChart;
+        window.chart.data.datasets[2].label = translations[lang].accumLossChart;
+        window.chart.update();
+      }
+    }
+
     function simulate() {
       const startBalance = parseFloat(document.getElementById("startBalance").value);
       const baseBet = parseFloat(document.getElementById("baseBet").value);
@@ -109,25 +232,28 @@
       }
 
       const ctx = document.getElementById("chart").getContext("2d");
+      // Get current language
+      const currentLang = document.documentElement.lang || 'en';
+
       window.chart = new Chart(ctx, {
         type: 'line',
         data: {
           labels: data.map((_, i) => i + 1),
           datasets: [
             {
-              label: 'Balance',
+              label: translations[currentLang].balanceChart,
               data: data.map(d => d.balance),
               borderColor: 'blue',
               fill: false
             },
             {
-              label: 'Bet Amount',
+              label: translations[currentLang].betAmountChart,
               data: data.map(d => d.bet),
               borderColor: 'green',
               fill: false
             },
             {
-              label: 'Accumulative Loss',
+              label: translations[currentLang].accumLossChart,
               data: data.map(d => d.accumLoss),
               borderColor: 'red',
               fill: false
@@ -142,6 +268,10 @@
         }
       });
     }
+    // Initialize with default language (English)
+    document.addEventListener('DOMContentLoaded', function() {
+      changeLanguage('en');
+    });
   </script>
 </body>
 </html>
