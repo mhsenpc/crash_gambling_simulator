@@ -20,6 +20,7 @@
     <label>Starting Balance: <input id="startBalance" type="number" value="10000"></label><br>
     <label>Base Bet: <input id="baseBet" type="number" value="100"></label><br>
     <label>Increase on Loss (%): <input id="lossPercent" type="number" value="100"></label><br>
+    <label>Increase on Win (%): <input id="winPercent" type="number" value="0"></label><br>
     <label>Cash Out at (X): <input id="cashOut" type="number" step="0.1" value="2.0"></label><br>
     <button onclick="simulate()">Simulate</button>
   </div>
@@ -48,6 +49,7 @@
       const startBalance = parseFloat(document.getElementById("startBalance").value);
       const baseBet = parseFloat(document.getElementById("baseBet").value);
       const lossPercent = parseFloat(document.getElementById("lossPercent").value) / 100;
+      const winPercent = parseFloat(document.getElementById("winPercent").value) / 100;
       const cashOut = parseFloat(document.getElementById("cashOut").value);
 
       let balance = startBalance;
@@ -83,7 +85,11 @@
         data.push({ crash, bet: Math.round(bet), earning: Math.round(earning), balance: Math.round(balance), accumLoss: Math.round(accumLoss), win });
 
         if(win) {
-          bet = baseBet;
+          if(winPercent > 0) {
+            bet += Math.round(bet * winPercent);
+          } else {
+            bet = baseBet;
+          }
         }
         else {
           bet += Math.round(bet * lossPercent);
